@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis SKI Berbasis Cinta</title>
+    <style>
+        :root {
+            --primary: #2d6a4f;
+            --secondary: #40916c;
+            --accent: #ffb703;
+            --light: #f4f9f4;
+            --dark: #1b4332;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 650px;
+            width: 100%;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        h1 { text-align: center; color: var(--primary); margin-bottom: 5px; }
+        h3 { text-align: center; color: var(--secondary); margin-top: 0; font-weight: 400; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        select, input {
+            width: 100%; padding: 10px; border: 2px solid #ccc;
+            border-radius: 8px; box-sizing: border-box; font-size: 16px;
+        }
+        input:disabled { background: #e9ecef; }
+        button {
+            width: 100%; padding: 12px; background: var(--primary);
+            color: white; border: none; border-radius: 8px;
+            font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s;
+        }
+        button:hover { background: var(--secondary); }
+        .hidden { display: none; }
+        .question-box {
+            background: #fff; padding: 20px; border-left: 5px solid var(--primary);
+            margin-bottom: 20px; border-radius: 0 8px 8px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .options label {
+            display: block; background: #f8f9fa; padding: 12px;
+            margin: 8px 0; border: 1px solid #ddd; border-radius: 6px;
+            cursor: pointer; font-weight: normal; transition: 0.2s;
+        }
+        .options label:hover { background: #e8f5e9; border-color: var(--secondary); }
+        .options input { width: auto; margin-right: 10px; }
+        .result-box { text-align: center; padding: 30px; }
+        .score { font-size: 48px; font-weight: bold; color: var(--primary); margin: 20px 0; }
+        .quote { font-style: italic; color: #555; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="login-screen">
+        <h1>Kuis SKI Kelas 8 & 9</h1>
+        <h3>Kurikulum Berbasis Cinta</h3>
+        <hr><br>
+        <div class="form-group">
+            <label for="kelas-select">Pilih Kelas:</label>
+            <select id="kelas-select" onchange="updateSiswaDropdown()">
+                <option value="">-- Pilih Kelas --</option>
+                <option value="8">Kelas 8 (Daulah Abbasiah & Pembaharuan)</option>
+                <option value="9">Kelas 9 (Islam di Nusantara & Tradisi)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="siswa-select">Nama Siswa:</label>
+            <select id="siswa-select" onchange="autoFillNISN()" disabled>
+                <option value="">-- Pilih Nama Anda --</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="nisn-input">NISN:</label>
+            <input type="text" id="nisn-input" placeholder="NISN otomatis terisi" disabled>
+        </div>
+        <button onclick="startQuiz()">Mulai Kuis Berkah</button>
+    </div>
+
+    <div id="quiz-screen" class="hidden">
+        <h2 id="quiz-title">Menjawab dengan Cinta...</h2>
+        <div id="quiz-container"></div>
+        <button onclick="submitQuiz()">Selesai & Kirim Nilai</button>
+    </div>
+
+    <div id="result-screen" class="hidden">
+        <h2>Alhamdulillah, Kuis Selesai!</h2>
+        <p>Terima kasih telah belajar sejarah dengan hati.</p>
+        <div class="score" id="final-score">0</div>
+        <p><strong>Nama:</strong> <span id="res-nama"></span> (<span id="res-nisn"></span>)</p>
+        <p class="quote" id="res-quote"></p>
+        <button onclick="location.reload()" style="background:#6c757d;">Kembali ke Depan</button>
+    </div>
+</div>
+
+<script>
+// DATA SISWA (Bisa ditambah sesuai kebutuhan)
+const dataSiswa = {
+    "8": [
+        { nama: "Ahmad Mujahid", nisn: "0012345671" },
+        { nama: "Aisyah Humaira", nisn: "0012345672" },
+        { nama: "Fathir Ar-Rayan", nisn: "0012345673" }
+    ],
+    "9": [
+        { nama: "Bagas Maulana", nisn: "0023456781" },
+        { nama: "Khadijah syafia", nisn: "0023456782" },
+        { nama: "Ziyad Al-Fatih", nisn: "0023456783" }
+    ]
+};
+
+// BANK SOAL KURIKULUM BERBASIS CINTA
+const bankSoal = {
+    "8": [
+        {
+            q: "Daulah Abbasiah melahirkan banyak ilmuwan muslim karena kecintaan mereka pada ilmu. Sikap cinta ilmu ini meniru bersabda Rasulullah SAW. Siapakah khalifah yang mendirikan Baitul Hikmah karena cintanya pada literasi?",
+            a: "Harun Al-Rasyid",
+            options: ["Harun Al-Rasyid", "Abu Abbas As-Saffah", "Marwan bin Muhammad", "Al-Mansur"]
+        },
+        {
+            q: "Imam Al-Ghazali adalah tokoh intelektual Abbasiah yang menulis 'Ihya Ulumuddin' untuk menumbuhkan cinta kepada Allah. Apa arti dari judul kitab tersebut?",
+            a: "Menghidupkan kembali ilmu-ilmu agama",
+            options: ["Menghidupkan kembali ilmu-ilmu agama", "Sejarah para nabi", "Kumpulan hukum fiqih", "Cinta tanah air"]
+        }
+    ],
+    "9": [
+        {
+            q: "Para Walisongo menyebarkan Islam di Nusantara tanpa kekerasan, melainkan dengan pendekatan seni budaya yang penuh kasih sayang. Siapakah pencipta tembang 'Tombo Ati' yang menyejukkan jiwa?",
+            a: "Sunan Bonang",
+            options: ["Sunan Bonang", "Sunan Kalijaga", "Sunan Kudus", "Sunan Giri"]
+        },
+        {
+            q: "Kerajaan Samudera Pasai terkenal sebagai pusat studi Islam yang ramah. Sultan Malik as-Saleh dikenal sangat dicintai rakyatnya karena kepemimpinannya yang berlandaskan kasih sayang. Sikap ini mencerminkan konsep...",
+            a: "Rahmatan lil 'Alamin",
+            options: ["Rahmatan lil 'Alamin", "Hubbul Wathan", "Ashabiyah", "Wihdatul Wujud"]
+        }
+    ]
+};
+
+let soalAktif = [];
+
+function updateSiswaDropdown() {
+    const kelas = document.getElementById("kelas-select").value;
+    const siswaSelect = document.getElementById("siswa-select");
+    siswaSelect.innerHTML = '<option value="">-- Pilih Nama Anda --</option>';
+    document.getElementById("nisn-input").value = "";
+
+    if (kelas && dataSiswa[kelas]) {
+        siswaSelect.disabled = false;
+        dataSiswa[kelas].forEach(s => {
+            let opt = document.createElement("option");
+            opt.value = s.nama;
+            opt.textContent = s.nama;
+            opt.dataset.nisn = s.nisn;
+            siswaSelect.appendChild(opt);
+        });
+    } else {
+        siswaSelect.disabled = true;
+    }
+}
+
+function autoFillNISN() {
+    const siswaSelect = document.getElementById("siswa-select");
+    const selectedOpt = siswaSelect.options[siswaSelect.selectedIndex];
+    const nisnInput = document.getElementById("nisn-input");
+    
+    if (selectedOpt && selectedOpt.dataset.nisn) {
+        nisnInput.value = selectedOpt.dataset.nisn;
+    } else {
+        nisnInput.value = "";
+    }
+}
+
+// Fungsi Mengacak Soal (Fisher-Yates Shuffle)
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+function startQuiz() {
+    const kelas = document.getElementById("kelas-select").value;
+    const nama = document.getElementById("siswa-select").value;
+
+    if (!kelas || !nama) {
+        alert("Silakan pilih Kelas dan Nama Anda terlebih dahulu!");
+        return;
+    }
+
+    document.getElementById("login-screen").classList.add("hidden");
+    document.getElementById("quiz-screen").classList.remove("hidden");
+
+    // Ambil soal berdasarkan kelas lalu ACAK
+    soalAktif = [...bankSoal[kelas]];
+    shuffle(soalAktif);
+
+    const container = document.getElementById("quiz-container");
+    container.innerHTML = "";
+
+    soalAktif.forEach((soal, index) => {
+        // Acak pilihan jawaban juga agar adil
+        let opsiDiancam = [...soal.options];
+        shuffle(opsiDiancam);
+
+        let qDiv = document.createElement("div");
+        qDiv.className = "question-box";
+        qDiv.innerHTML = `<p><strong>Soal ${index + 1}:</strong> ${soal.q}</p>`;
+
+        let optDiv = document.createElement("div");
+        optDiv.className = "options";
+
+        opsiDiancam.forEach(opt => {
+            optDiv.innerHTML += `
+                <label>
+                    <input type="radio" name="soal-${index}" value="${opt}"> ${opt}
+                </label>
+            `;
+        });
+
+        qDiv.appendChild(optDiv);
+        container.appendChild(qDiv);
+    });
+}
+
+function submitQuiz() {
+    let skor = 0;
+    let totalSoal = soalAktif.length;
+
+    soalAktif.forEach((soal, index) => {
+        const terpilih = document.querySelector(`input[name="soal-${index}"]:checked`);
+        if (terpilih && terpilih.value === soal.a) {
+            skor++;
+        }
+    });
+
+    // Hitung nilai akhir skala 100
+    let nilaiAkhir = Math.round((skor / totalSoal) * 100);
+
+    // Tampilkan Hasil
+    document.getElementById("quiz-screen").classList.add("hidden");
+    document.getElementById("result-screen").classList.remove("hidden");
+
+    document.getElementById("final-score").textContent = nilaiAkhir;
+    document.getElementById("res-nama").textContent = document.getElementById("siswa-select").value;
+    document.getElementById("res-nisn").textContent = document.getElementById("nisn-input").value;
+
+    // Pesan Kurikulum Cinta
+    let quote = "";
+    if (nilaiAkhir >= 75) {
+        quote = '"Masya Allah! Hatimu dipenuhi cinta pada sejarah perjuangan Islam. Pertahankan semangatmu dalam meneladani kemuliaan akhlak para pendahulu!"';
+    } else {
+        quote = '"Alhamdulillah atas usahamu. Sejarah bukan sekadar angka, melainkan cermin untuk memperabaiki diri dengan cinta. Yuk, baca-baca lagi!"';
+    }
+    document.getElementById("res-quote").textContent = quote;
+}
+</script>
+
+</body>
+</html>
